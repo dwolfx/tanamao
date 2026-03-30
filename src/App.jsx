@@ -1,121 +1,103 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from 'react';
+import Layout from './components/Layout';
+import Scanner from './components/Scanner';
+import Dashboard from './components/Dashboard';
+import { useDeliveries } from './hooks/useDeliveries';
+import { Sparkles, Calendar, CheckCircle2, History } from 'lucide-react';
 
-function App() {
-  const [count, setCount] = useState(0)
+function CompletedView({ deliveries, loading }) {
+  const completed = deliveries.filter(d => d.status === 'sucesso' || d.status === 'ausente' || d.status === 'devolvido');
+
+  if (loading) return <div>Carregando...</div>;
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-black italic tracking-tight text-white/90 px-2 uppercase">
+        CONCLUÍDAS <span className="text-secondary not-italic opacity-40">({completed.length})</span>
+      </h2>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {completed.length === 0 ? (
+        <div className="bg-surface rounded-3xl p-10 text-center text-secondary border border-white/5 mx-2">
+          <History size={40} className="mx-auto mb-4 opacity-20" />
+          <p>Nenhuma entrega concluída ainda hoje.</p>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+      ) : (
+        <div className="space-y-4 px-1">
+          {completed.map((item) => (
+            <div key={item.id} className="bg-surface/50 border border-white/5 rounded-2xl p-4 flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-green-500" />
+                  <span className="font-bold text-sm uppercase">{item.endereco_completo}, {item.numero}</span>
+                </div>
+                <div className="flex gap-2 text-[10px] font-bold text-secondary tracking-widest">
+                  <span>ID {item.codigo_rastreio}</span>
+                  <span>•</span>
+                  <span>{new Date(item.delivered_at || item.created_at).toLocaleTimeString()}</span>
+                </div>
+              </div>
+              <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500 font-black text-xs">
+                {item.status === 'sucesso' ? 'OK' : 'ERR'}
+              </div>
+            </div>
+          ))}
         </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      )}
+    </div>
+  );
 }
 
-export default App
+export default function App() {
+  const [activeTab, setActiveTab] = useState('route');
+  const { deliveries, loading, error, addDelivery, updateStatus } = useDeliveries();
+
+  const handleScanSuccess = async (code) => {
+    // Basic address simulation for demo - in real life this would come from an API or manifest
+    const addressMatch = code.match(/ADR:(.+)#NUM:(.+)#CMP:(.*)/);
+    
+    const deliveryData = {
+      codigo_rastreio: code,
+      endereco_completo: addressMatch ? addressMatch[1] : "Rua Simulação",
+      numero: addressMatch ? addressMatch[2] : Math.floor(Math.random() * 999).toString(),
+      complemento: addressMatch ? addressMatch[3] : "Apartamento " + Math.floor(Math.random() * 100),
+      status: 'pendente',
+      user_id: null, // Hardcoded for now as auth is not implemented
+    };
+
+    const { error: addError } = await addDelivery(deliveryData);
+    if (addError) {
+      console.error("Erro ao salvar entrega:", addError);
+      alert("Erro ao salvar entrega. Verifique o console.");
+    } else {
+      // Stay on scan for multiple items? User choice. Let's redirect to route after a short delay
+      setTimeout(() => setActiveTab('route'), 1000);
+    }
+  };
+
+  return (
+    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+      {activeTab === 'scan' && (
+        <Scanner onScanSuccess={handleScanSuccess} />
+      )}
+      
+      {activeTab === 'route' && (
+        <Dashboard 
+          deliveries={deliveries} 
+          loading={loading} 
+          onUpdateStatus={updateStatus} 
+        />
+      )}
+
+      {activeTab === 'completed' && (
+        <CompletedView deliveries={deliveries} loading={loading} />
+      )}
+
+      {error && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl flex items-center gap-2">
+          <Sparkles size={12} />
+          Erro de Conexão: Usando Cache Offline
+        </div>
+      )}
+    </Layout>
+  );
+}
