@@ -34,51 +34,64 @@ export default function Scanner({ onScanSuccess }) {
   };
 
   useEffect(() => {
-    const config = {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
-      aspectRatio: 1.0,
-      showTorchButtonIfSupported: true,
-    };
-
-    const scanner = new Html5Qrcode('scanner-region');
-    scannerRef.current = scanner;
+    let isMounted = true;
+    let scanner = null;
 
     const startScanner = async () => {
       try {
+        scanner = new Html5Qrcode('scanner-region');
+        scannerRef.current = scanner;
+
+        const config = {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          showTorchButtonIfSupported: true,
+        };
+
         await scanner.start(
           { facingMode: 'environment' },
           config,
           (decodedText) => {
-            if (decodedText !== lastScan) {
+            if (isMounted) {
+              console.log("RAW_SCAN_RESULT:", decodedText);
               setLastScan(decodedText);
               playBeep();
               onScanSuccess(decodedText);
               
-              // Visual feedback
+              // Pause visual scanning for a bit
               setIsScanning(false);
-              setTimeout(() => setIsScanning(true), 1500);
+              setTimeout(() => {
+                if (isMounted) {
+                  setLastScan(null);
+                  setIsScanning(true);
+                }
+              }, 1500);
             }
           },
-          (errorMessage) => {
-            // Silence common scanning errors
-          }
+          () => {} // Ignore frame errors
         );
       } catch (err) {
-        setError('Erro ao acessar a câmera: ' + err);
+        if (isMounted) setError('Erro ao acessar a câmera: ' + err);
       }
     };
 
-    if (isScanning) {
-      startScanner();
-    }
+    startScanner();
 
     return () => {
-      if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.stop().catch(e => console.error(e));
+      isMounted = false;
+      if (scanner) {
+        // If it's currently scanning, stop it
+        if (scanner.isScanning) {
+          scanner.stop()
+            .then(() => scanner.clear())
+            .catch(e => console.warn('Error during scanner cleanup:', e));
+        } else {
+          try { scanner.clear(); } catch(e) {}
+        }
       }
     };
-  }, [isScanning, onScanSuccess, lastScan]);
+  }, [onScanSuccess]); // Only recreate if callback changes (unlikely)
 
   return (
     <div className="flex flex-col items-center space-y-6">

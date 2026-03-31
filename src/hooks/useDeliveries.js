@@ -87,5 +87,25 @@ export function useDeliveries() {
     }
   };
 
-  return { deliveries, loading, error, fetchDeliveries, addDelivery, updateStatus };
+  const seedData = async () => {
+    const suffix = Math.random().toString(36).substring(7).toUpperCase();
+    const testData = [
+      { codigo_rastreio: 'BR1001-'+suffix, endereco_completo: 'Rua das Flores', numero: '120', complemento: 'Casa 1', status: 'pendente' },
+      { codigo_rastreio: 'BR1002-'+suffix, endereco_completo: 'Rua das Flores', numero: '120', complemento: 'Loja A', status: 'pendente' },
+      { codigo_rastreio: 'BR1003-'+suffix, endereco_completo: 'Av. Paulista', numero: '500', complemento: '10º Andar', status: 'pendente' },
+      { codigo_rastreio: 'BR1004-'+suffix, endereco_completo: 'Rua Oscar Freire', numero: '95', complemento: 'Fundos', status: 'pendente' },
+      { codigo_rastreio: 'BR1005-'+suffix, endereco_completo: 'Rua Oscar Freire', numero: '95', complemento: 'Frente', status: 'pendente' },
+    ];
+
+    try {
+      const { data, error } = await supabase.from('entregas').insert(testData).select();
+      if (error) throw error;
+      fetchDeliveries(); // Refresh
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err.message };
+    }
+  };
+
+  return { deliveries, loading, error, fetchDeliveries, addDelivery, updateStatus, seedData };
 }

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, Package, Navigation, CheckCircle2, ChevronRight, Info } from 'lucide-react';
+import { MapPin, Package, Navigation, CheckCircle2, ChevronRight, Info, PlusCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -7,7 +7,7 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export default function Dashboard({ deliveries, loading, onUpdateStatus }) {
+export default function Dashboard({ deliveries, loading, onUpdateStatus, onSeed }) {
   const [updating, setUpdating] = useState(null);
 
   const groupedDeliveries = useMemo(() => {
@@ -79,7 +79,14 @@ export default function Dashboard({ deliveries, loading, onUpdateStatus }) {
         </div>
         <div>
           <h3 className="text-xl font-bold">Tudo Pronto!</h3>
-          <p className="text-secondary text-sm px-10">Você não tem entregas pendentes. Escaneie novos pacotes para começar.</p>
+          <p className="text-secondary text-sm px-10 mb-6">Você não tem entregas pendentes. Escaneie novos pacotes ou use o botão abaixo para testar.</p>
+          <button 
+            onClick={onSeed}
+            className="flex items-center gap-2 mx-auto bg-primary/20 text-primary border border-primary/30 px-6 py-3 rounded-2xl font-bold hover:bg-primary/30 transition-all active:scale-95"
+          >
+            <PlusCircle size={20} />
+            Gerar Rota de Teste
+          </button>
         </div>
       </div>
     );

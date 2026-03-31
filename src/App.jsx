@@ -49,10 +49,19 @@ function CompletedView({ deliveries, loading }) {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('route');
-  const { deliveries, loading, error, addDelivery, updateStatus } = useDeliveries();
+  const { deliveries, loading, error, addDelivery, updateStatus, seedData } = useDeliveries();
 
   const handleScanSuccess = async (code) => {
-    // Basic address simulation for demo - in real life this would come from an API or manifest
+    // Check for duplicates in existing state
+    const alreadyExists = deliveries.find(d => d.codigo_rastreio === code);
+    
+    if (alreadyExists) {
+      alert("Este pacote já foi escaneado e está na sua rota!");
+      setActiveTab('route');
+      return;
+    }
+
+    // Basic address simulation for demo
     const addressMatch = code.match(/ADR:(.+)#NUM:(.+)#CMP:(.*)/);
     
     const deliveryData = {
@@ -61,15 +70,14 @@ export default function App() {
       numero: addressMatch ? addressMatch[2] : Math.floor(Math.random() * 999).toString(),
       complemento: addressMatch ? addressMatch[3] : "Apartamento " + Math.floor(Math.random() * 100),
       status: 'pendente',
-      user_id: null, // Hardcoded for now as auth is not implemented
+      user_id: null,
     };
 
     const { error: addError } = await addDelivery(deliveryData);
     if (addError) {
       console.error("Erro ao salvar entrega:", addError);
-      alert("Erro ao salvar entrega. Verifique o console.");
+      alert("Erro ao salvar entrega. Verifique se o código é único.");
     } else {
-      // Stay on scan for multiple items? User choice. Let's redirect to route after a short delay
       setTimeout(() => setActiveTab('route'), 1000);
     }
   };
@@ -85,6 +93,7 @@ export default function App() {
           deliveries={deliveries} 
           loading={loading} 
           onUpdateStatus={updateStatus} 
+          onSeed={seedData}
         />
       )}
 
@@ -93,9 +102,14 @@ export default function App() {
       )}
 
       {error && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl flex items-center gap-2">
-          <Sparkles size={12} />
-          Erro de Conexão: Usando Cache Offline
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-3 rounded-2xl text-xs font-bold shadow-xl flex flex-col items-center gap-1 z-[100] min-w-[280px]">
+          <div className="flex items-center gap-2">
+            <Sparkles size={12} />
+            Erro de Sincronização
+          </div>
+          <div className="opacity-80 font-mono text-[10px] text-center border-t border-white/20 pt-1 mt-1 w-full">
+            {error}
+          </div>
         </div>
       )}
     </Layout>
