@@ -138,7 +138,12 @@ export default function BulkImporter({ onImport, onCancel }) {
               Voltar
             </button>
             <button
-              onClick={() => onImport(results.filter(r => r.selected))}
+              onClick={() => {
+                const cleanItems = results
+                  .filter(r => r.selected)
+                  .map(({ selected, ...rest }) => rest);
+                onImport(cleanItems);
+              }}
               disabled={results.filter(r => r.selected).length === 0}
               className="flex-[2] bg-primary text-background py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-50"
             >
