@@ -180,7 +180,7 @@ export default function Dashboard({ deliveries, loading, onUpdateStatus, onSeed,
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por nome, rua ou rastreio..."
-              className="w-full bg-surface border border-white/5 rounded-2xl pl-12 pr-12 py-4 text-sm font-bold focus:border-primary/50 focus:outline-none transition-all placeholder:text-secondary/40 placeholder:font-medium"
+              className="w-full bg-surface border border-white/5 rounded-2xl pl-12 pr-12 py-4 text-base font-bold focus:border-primary/50 focus:outline-none transition-all placeholder:text-secondary/40 placeholder:font-medium"
             />
             {searchTerm && (
               <button 

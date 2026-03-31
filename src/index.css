@@ -18,9 +18,17 @@ body {
   background-color: var(--color-background);
   color: white;
   font-family: var(--font-sans);
+  touch-action: pan-x pan-y;
+  user-select: none;
+  -webkit-user-select: none;
   @apply antialiased selection:bg-amber-400/30;
   margin: 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+  user-select: auto;
+  -webkit-user-select: auto;
 }
 
 /* Custom Scrollbar for High Contrast */

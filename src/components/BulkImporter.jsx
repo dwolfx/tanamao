@@ -75,7 +75,7 @@ export default function BulkImporter({ onImport, onCancel }) {
                 value={manualText}
                 onChange={(e) => setManualText(e.target.value)}
                 placeholder="Cole aqui o texto inteiro copiado da foto..."
-                className="w-full flex-1 min-h-[200px] bg-background border border-white/5 rounded-2xl p-4 text-sm font-medium focus:border-primary/50 focus:outline-none transition-all placeholder:text-secondary/30 resize-none font-mono"
+                className="w-full flex-1 min-h-[200px] bg-background border border-white/5 rounded-2xl p-4 text-base font-medium focus:border-primary/50 focus:outline-none transition-all placeholder:text-secondary/30 resize-none font-mono"
               />
               <button
                 onClick={processManualText}
