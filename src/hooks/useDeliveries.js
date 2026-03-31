@@ -90,11 +90,11 @@ export function useDeliveries() {
   const seedData = async () => {
     const suffix = Math.random().toString(36).substring(7).toUpperCase();
     const testData = [
-      { codigo_rastreio: 'BR1001-'+suffix, endereco_completo: 'Rua das Flores', numero: '120', complemento: 'Casa 1', status: 'pendente' },
-      { codigo_rastreio: 'BR1002-'+suffix, endereco_completo: 'Rua das Flores', numero: '120', complemento: 'Loja A', status: 'pendente' },
-      { codigo_rastreio: 'BR1003-'+suffix, endereco_completo: 'Av. Paulista', numero: '500', complemento: '10º Andar', status: 'pendente' },
-      { codigo_rastreio: 'BR1004-'+suffix, endereco_completo: 'Rua Oscar Freire', numero: '95', complemento: 'Fundos', status: 'pendente' },
-      { codigo_rastreio: 'BR1005-'+suffix, endereco_completo: 'Rua Oscar Freire', numero: '95', complemento: 'Frente', status: 'pendente' },
+      { codigo_rastreio: 'BR1001-'+suffix, nome_destinatario: 'João Silva', endereco_completo: 'Rua das Flores', numero: '120', cep: '01234-000', complemento: 'Casa 1', status: 'pendente' },
+      { codigo_rastreio: 'BR1002-'+suffix, nome_destinatario: 'Maria Oliveira', endereco_completo: 'Rua das Flores', numero: '120', cep: '01234-000', complemento: 'Loja A', status: 'pendente' },
+      { codigo_rastreio: 'BR1003-'+suffix, nome_destinatario: 'Carlos Souza', endereco_completo: 'Av. Paulista', numero: '500', cep: '01310-000', complemento: '10º Andar', status: 'pendente' },
+      { codigo_rastreio: 'BR1004-'+suffix, nome_destinatario: 'Ana Costa', endereco_completo: 'Rua Oscar Freire', numero: '95', cep: '01426-001', complemento: 'Fundos', status: 'pendente' },
+      { codigo_rastreio: 'BR1005-'+suffix, nome_destinatario: 'Roberto Lima', endereco_completo: 'Rua Oscar Freire', numero: '95', cep: '01426-001', complemento: 'Frente', status: 'pendente' },
     ];
 
     try {
@@ -107,5 +107,62 @@ export function useDeliveries() {
     }
   };
 
-  return { deliveries, loading, error, fetchDeliveries, addDelivery, updateStatus, seedData };
+  const addBulkDeliveries = async (items) => {
+    try {
+      const { data, error } = await supabase
+        .from('entregas')
+        .insert(items.map(item => ({ ...item, status: 'pendente', user_id: null })))
+        .select();
+
+      if (error) throw error;
+
+      const updatedDeliveries = [...data, ...deliveries];
+      setDeliveries(updatedDeliveries);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updatedDeliveries));
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err.message };
+    }
+  };
+
+  const deleteDeliveries = async (ids) => {
+    try {
+      const { error } = await supabase
+        .from('entregas')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      const updatedDeliveries = deliveries.filter(d => !ids.includes(d.id));
+      setDeliveries(updatedDeliveries);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(updatedDeliveries));
+      return { error: null };
+    } catch (err) {
+      return { error: err.message };
+    }
+  };
+
+  const saveRouteOptimization = async (updates) => {
+    try {
+      const { data, error } = await supabase
+        .from('entregas')
+        .upsert(updates, { onConflict: 'id' })
+        .select();
+
+      if (error) throw error;
+      
+      const newDeliveries = deliveries.map(d => {
+        const update = updates.find(u => u.id === d.id);
+        return update ? { ...d, ...update } : d;
+      });
+      setDeliveries(newDeliveries);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(newDeliveries));
+      return { data, error: null };
+    } catch (err) {
+      return { error: err.message };
+    }
+  };
+
+  return { deliveries, loading, error, fetchDeliveries, addDelivery, addBulkDeliveries, updateStatus, seedData, deleteDeliveries, saveRouteOptimization };
 }

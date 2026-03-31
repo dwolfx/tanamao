@@ -2,13 +2,108 @@ import React, { useState } from 'react';
 import Layout from './components/Layout';
 import Scanner from './components/Scanner';
 import Dashboard from './components/Dashboard';
+import OCRConfirmation from './components/OCRConfirmation';
+import BulkImporter from './components/BulkImporter';
 import { useDeliveries } from './hooks/useDeliveries';
-import { Sparkles, Calendar, CheckCircle2, History } from 'lucide-react';
+import { Sparkles, History, CheckCircle2 } from 'lucide-react';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('route');
+  const [ocrData, setOcrData] = useState(null);
+  const [showBulkImporter, setShowBulkImporter] = useState(false);
+  const { deliveries, loading, error, addDelivery, addBulkDeliveries, updateStatus, seedData, deleteDeliveries, saveRouteOptimization } = useDeliveries();
+
+  const handleOCRSuccess = (data) => {
+    setOcrData(data);
+  };
+
+  const handleConfirmOCR = async (finalData) => {
+    const { error: addError } = await addDelivery({
+      ...finalData,
+      status: 'pendente',
+      user_id: null,
+    });
+
+    if (addError) {
+      alert("Erro ao salvar: " + addError);
+    } else {
+      setOcrData(null);
+      setActiveTab('route');
+    }
+  };
+
+  const handleBulkImport = async (items) => {
+    const { error: bulkError } = await addBulkDeliveries(items);
+    if (bulkError) {
+      alert("Erro na importação em massa: " + bulkError);
+    } else {
+      setShowBulkImporter(false);
+      setActiveTab('route');
+    }
+  };
+
+  return (
+    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+      {activeTab === 'scan' && (
+        <Scanner 
+          onOCRSuccess={handleOCRSuccess}
+        />
+      )}
+      
+      {activeTab === 'route' && (
+        <Dashboard 
+          deliveries={deliveries} 
+          loading={loading} 
+          onUpdateStatus={updateStatus} 
+          onSeed={seedData}
+          onImportScreenshot={() => setShowBulkImporter(true)}
+          deleteDeliveries={deleteDeliveries}
+          saveRouteOptimization={saveRouteOptimization}
+        />
+      )}
+
+      {activeTab === 'completed' && (
+        <CompletedView deliveries={deliveries} loading={loading} />
+      )}
+
+      {ocrData && (
+        <OCRConfirmation 
+          data={ocrData} 
+          onConfirm={handleConfirmOCR}
+          onCancel={() => setOcrData(null)}
+        />
+      )}
+
+      {showBulkImporter && (
+        <BulkImporter 
+          onImport={handleBulkImport}
+          onCancel={() => setShowBulkImporter(false)}
+        />
+      )}
+
+      {error && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-3 rounded-2xl text-xs font-bold shadow-xl flex flex-col items-center gap-1 z-[100] min-w-[280px]">
+          <div className="flex items-center gap-2">
+            <Sparkles size={12} />
+            Erro de Sincronização
+          </div>
+          <div className="opacity-80 font-mono text-[10px] text-center border-t border-white/20 pt-1 mt-1 w-full">
+            {error}
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
+}
 
 function CompletedView({ deliveries, loading }) {
   const completed = deliveries.filter(d => d.status === 'sucesso' || d.status === 'ausente' || d.status === 'devolvido');
 
-  if (loading) return <div>Carregando...</div>;
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -44,74 +139,5 @@ function CompletedView({ deliveries, loading }) {
         </div>
       )}
     </div>
-  );
-}
-
-export default function App() {
-  const [activeTab, setActiveTab] = useState('route');
-  const { deliveries, loading, error, addDelivery, updateStatus, seedData } = useDeliveries();
-
-  const handleScanSuccess = async (code) => {
-    // Check for duplicates in existing state
-    const alreadyExists = deliveries.find(d => d.codigo_rastreio === code);
-    
-    if (alreadyExists) {
-      alert("Este pacote já foi escaneado e está na sua rota!");
-      setActiveTab('route');
-      return;
-    }
-
-    // Basic address simulation for demo
-    const addressMatch = code.match(/ADR:(.+)#NUM:(.+)#CMP:(.*)/);
-    
-    const deliveryData = {
-      codigo_rastreio: code,
-      endereco_completo: addressMatch ? addressMatch[1] : "Rua Simulação",
-      numero: addressMatch ? addressMatch[2] : Math.floor(Math.random() * 999).toString(),
-      complemento: addressMatch ? addressMatch[3] : "Apartamento " + Math.floor(Math.random() * 100),
-      status: 'pendente',
-      user_id: null,
-    };
-
-    const { error: addError } = await addDelivery(deliveryData);
-    if (addError) {
-      console.error("Erro ao salvar entrega:", addError);
-      alert("Erro ao salvar entrega. Verifique se o código é único.");
-    } else {
-      setTimeout(() => setActiveTab('route'), 1000);
-    }
-  };
-
-  return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'scan' && (
-        <Scanner onScanSuccess={handleScanSuccess} />
-      )}
-      
-      {activeTab === 'route' && (
-        <Dashboard 
-          deliveries={deliveries} 
-          loading={loading} 
-          onUpdateStatus={updateStatus} 
-          onSeed={seedData}
-        />
-      )}
-
-      {activeTab === 'completed' && (
-        <CompletedView deliveries={deliveries} loading={loading} />
-      )}
-
-      {error && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-3 rounded-2xl text-xs font-bold shadow-xl flex flex-col items-center gap-1 z-[100] min-w-[280px]">
-          <div className="flex items-center gap-2">
-            <Sparkles size={12} />
-            Erro de Sincronização
-          </div>
-          <div className="opacity-80 font-mono text-[10px] text-center border-t border-white/20 pt-1 mt-1 w-full">
-            {error}
-          </div>
-        </div>
-      )}
-    </Layout>
   );
 }
