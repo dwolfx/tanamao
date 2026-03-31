@@ -229,22 +229,23 @@ export default function Dashboard({ deliveries, loading, onUpdateStatus, onSeed,
           filteredGroups.map((group) => (
             <div 
               key={`${group.endereco}-${group.numero}-${group.cep}`}
-              className="group relative bg-surface border border-white/5 rounded-[32px] p-6 shadow-lg transition-all overflow-hidden"
+              className="group relative bg-surface border border-white/5 rounded-[32px] p-6 pt-10 shadow-lg transition-all overflow-hidden"
             >
               {group.ordem_rota !== 9999 && (
-                <div className="absolute -left-2 -top-2 bg-gradient-to-br from-indigo-500 to-purple-600 w-10 h-10 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-500/20 z-10 border border-white/10 ring-4 ring-background rotate-[-6deg]">
+                <div className="absolute left-0 top-0 bg-gradient-to-br from-indigo-500 to-purple-600 px-3 py-1.5 rounded-tl-[32px] rounded-br-[16px] flex items-baseline justify-center font-black text-white shadow-md shadow-indigo-500/20 z-20 border-b border-r border-white/10 text-sm leading-none">
+                  <span className="text-[9px] opacity-70 mr-[2px] tracking-widest">#</span>
                   {group.ordem_rota}
                 </div>
               )}
               
               <button
                 onClick={() => handleDeleteGroup(group)}
-                className="absolute top-4 right-4 text-secondary/30 hover:text-red-500/90 active:scale-90 hover:bg-red-500/10 transition-all p-2 rounded-full z-10"
+                className="absolute top-4 right-4 text-secondary/30 hover:text-red-500/90 active:scale-90 hover:bg-red-500/10 transition-all p-2 rounded-full z-20"
                 title="Excluir entrega"
               >
                 <Trash2 size={16} />
               </button>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-16 translate-x-16 blur-3xl" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-16 translate-x-16 blur-3xl pointer-events-none" />
 
               <div className="flex flex-col">
                 <div className="space-y-3 flex-1">
