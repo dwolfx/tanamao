@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { MapPin, Package, Navigation, CheckCircle2, Info, PlusCircle, Image as ImageIcon, Search, X, Trash2, Wand2 } from 'lucide-react';
+import { MapPin, Package, Navigation, CheckCircle2, Info, PlusCircle, FileText, Search, X, Trash2, Wand2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { optimizeRoute } from '../utils/routeOptimizer';
@@ -66,7 +66,7 @@ export default function Dashboard({ deliveries, loading, onUpdateStatus, onSeed,
       optimizedGroups.forEach((g, index) => {
         g.items.forEach(item => {
           updates.push({
-            id: item.id,
+            ...item,
             lat: g.lat,
             lng: g.lng,
             ordem_rota: index + 1
@@ -129,22 +129,15 @@ export default function Dashboard({ deliveries, loading, onUpdateStatus, onSeed,
         <div className="space-y-4 px-8">
           <h3 className="text-xl font-bold italic tracking-tighter">SUA ROTA ESTÁ LIMPA</h3>
           <p className="text-secondary text-[11px] mb-4 opacity-60 leading-relaxed">
-            Escaneie novos pacotes, suba um print da sua lista ou gere dados para testar.
+            Cole os dados copiados da sua lista de pacotes para iniciar a rota.
           </p>
-          <div className="grid grid-cols-1 gap-2 w-full max-w-[240px]">
+          <div className="grid grid-cols-1 w-full max-w-[240px] mx-auto">
             <button 
               onClick={onImportScreenshot}
-              className="flex items-center justify-center gap-3 bg-white/5 text-white border border-white/10 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95 shadow-xl"
-            >
-              <ImageIcon size={18} className="text-primary" />
-              Importar Print
-            </button>
-            <button 
-              onClick={onSeed}
               className="flex items-center justify-center gap-3 bg-primary text-background px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-primary/20"
             >
-              <PlusCircle size={18} />
-              Gerar Rota de Teste
+              <FileText size={18} />
+              Colar Entregas
             </button>
           </div>
         </div>
@@ -172,7 +165,7 @@ export default function Dashboard({ deliveries, loading, onUpdateStatus, onSeed,
             onClick={onImportScreenshot}
             className="flex items-center gap-2 bg-surface border border-white/5 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/5 transition-all text-secondary"
           >
-            <ImageIcon size={14} className="text-primary" />
+            <FileText size={14} className="text-primary" />
             <span className="hidden xs:inline">Importar</span>
           </button>
         </div>

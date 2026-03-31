@@ -9,7 +9,6 @@ function cn(...inputs) {
 
 export default function Layout({ children, activeTab, onTabChange }) {
   const tabs = [
-    { id: 'scan', label: 'Escanear', icon: Camera },
     { id: 'route', label: 'Minha Rota', icon: Map },
     { id: 'completed', label: 'Concluídas', icon: CheckCircle },
   ];

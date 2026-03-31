@@ -1,23 +1,12 @@
 import React, { useState } from 'react';
-import { Upload, X, Check, Loader2, Image as ImageIcon, AlertCircle, FileText } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { X, Check, Loader2, FileText, AlertCircle } from 'lucide-react';
 import { parseBulkScreenshot } from '../utils/ocrProcessor';
 
 export default function BulkImporter({ onImport, onCancel }) {
-  const [inputMode, setInputMode] = useState('image');
   const [manualText, setManualText] = useState('');
-  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
-
-  const handleFileChange = (e) => {
-    const selected = e.target.files[0];
-    if (selected) {
-      setFile(selected);
-      setError(null);
-    }
-  };
 
   const processManualText = () => {
     if (!manualText.trim()) return;
@@ -38,44 +27,6 @@ export default function BulkImporter({ onImport, onCancel }) {
     }
   };
 
-  const processImage = async () => {
-    if (!file) return;
-    setLoading(true);
-    setError(null);
-
-    try {
-      // 1. Convert file to Base64
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]); // remove data:image/...;base64,
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      // 2. Invoke Supabase Edge Function (Google Cloud Vision API)
-      const { data, error: functionError } = await supabase.functions.invoke('vision-ocr', {
-        body: { imageBase64: base64 }
-      });
-
-      if (functionError) throw new Error(functionError.message || "Erro de rede no Edge Function");
-      if (data?.error) throw new Error(data.error);
-
-      // 3. Parse the high-quality text using our strict rules
-      const items = parseBulkScreenshot(data.text);
-      
-      if (items.length === 0) {
-        setError("A IA não conseguiu estruturar as entregas. Verifique a legibilidade do print.");
-      } else {
-        setResults(items);
-      }
-    } catch (err) {
-      setError("Erro ao processar imagem via inteligência artificial nas nuvens.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const toggleItem = (idx) => {
     const newResults = [...results];
     newResults[idx].selected = !newResults[idx].selected;
@@ -84,9 +35,6 @@ export default function BulkImporter({ onImport, onCancel }) {
 
   const tryAgain = () => {
     setResults([]);
-    // Optionally reset file and text or keep them for tweaking
-    // setFile(null);
-    // setManualText('');
   };
 
   return (
@@ -97,155 +45,80 @@ export default function BulkImporter({ onImport, onCancel }) {
         <div className="p-8 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center text-primary">
-              {inputMode === 'image' ? <ImageIcon size={24} /> : <FileText size={24} />}
+              <FileText size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-black uppercase italic tracking-tight">Importar Dados</h2>
-              <p className="text-secondary text-[10px] uppercase font-bold tracking-widest opacity-50">Carga em Massa Estruturada</p>
+              <h2 className="text-xl font-black italic tracking-tighter">COLAR ENTREGAS</h2>
+              <p className="text-secondary text-xs opacity-60">Extraia via iOS Live Text</p>
             </div>
           </div>
-          <button onClick={onCancel} className="text-secondary hover:text-white transition-colors">
-            <X size={24} />
+          <button 
+            onClick={onCancel}
+            className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-secondary hover:text-white transition-colors"
+          >
+            <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {!results.length && !loading && (
-            <div className="space-y-6">
-              {/* Tab Switcher */}
-              <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10">
-                <button
-                  onClick={() => setInputMode('image')}
-                  className={inputMode === 'image' 
-                    ? "flex-1 py-3 text-xs font-black uppercase tracking-widest bg-primary text-background rounded-xl transition-all shadow-lg shadow-primary/20" 
-                    : "flex-1 py-3 text-xs font-black uppercase tracking-widest text-secondary hover:text-white transition-all"}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <ImageIcon size={16} /> Imagem
-                  </div>
-                </button>
-                <button
-                  onClick={() => setInputMode('text')}
-                  className={inputMode === 'text' 
-                    ? "flex-1 py-3 text-xs font-black uppercase tracking-widest bg-primary text-background rounded-xl transition-all shadow-lg shadow-primary/20" 
-                    : "flex-1 py-3 text-xs font-black uppercase tracking-widest text-secondary hover:text-white transition-all"}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <FileText size={16} /> Colar Texto
-                  </div>
-                </button>
-              </div>
-
-              {inputMode === 'image' ? (
-                <>
-                  <label className="border-2 border-dashed border-white/10 rounded-[32px] p-12 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 transition-all bg-white/[0.02]">
-                    <input type="file" onChange={handleFileChange} className="hidden" accept="image/*" />
-                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center text-secondary">
-                      <Upload size={32} />
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold text-sm">Clique para selecionar o print</p>
-                      <p className="text-secondary text-[10px] mt-1">Formatos: PNG, JPG, JPEG</p>
-                    </div>
-                    {file && (
-                      <div className="mt-4 px-4 py-2 bg-primary/20 text-primary rounded-full text-[10px] font-black uppercase">
-                        {file.name}
-                      </div>
-                    )}
-                  </label>
-
-                  {file && (
-                    <button 
-                      onClick={processImage}
-                      className="w-full bg-primary text-background h-16 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all"
-                    >
-                      PROCESSAR IMAGEM
-                    </button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <textarea
-                    value={manualText}
-                    onChange={(e) => setManualText(e.target.value)}
-                    placeholder="Cole aqui o texto copiado pelo iOS (Texto ao Vivo)..."
-                    className="w-full h-48 bg-white/5 border border-white/10 rounded-[24px] p-6 text-sm text-white/90 placeholder:text-secondary/50 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all resize-none shadow-inner"
-                  />
-                  {manualText.trim() && (
-                    <button 
-                      onClick={processManualText}
-                      className="w-full bg-primary text-background h-16 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all"
-                    >
-                      PROCESSAR TEXTO
-                    </button>
-                  )}
-                </>
-              )}
+        <div className="p-8 flex-1 overflow-y-auto min-h-[300px]">
+          {error && (
+            <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex items-start gap-3">
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <p>{error}</p>
             </div>
           )}
 
-          {loading && (
-            <div className="py-20 flex flex-col items-center justify-center gap-6">
-              <div className="relative">
-                <Loader2 className="text-primary animate-spin" size={64} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-8 h-8 bg-primary/20 rounded-full animate-ping" />
-                </div>
-              </div>
-              <div className="text-center space-y-2">
-                <p className="font-black text-primary uppercase tracking-[0.2em] text-xl">Lendo Roteirização</p>
-                <p className="text-secondary text-[10px] font-bold opacity-60">Extraindo dados do seu print...</p>
-              </div>
+          {results.length === 0 ? (
+            <div className="h-full flex flex-col">
+              <textarea 
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                placeholder="Cole aqui o texto inteiro copiado da foto..."
+                className="w-full flex-1 min-h-[200px] bg-background border border-white/5 rounded-2xl p-4 text-sm font-medium focus:border-primary/50 focus:outline-none transition-all placeholder:text-secondary/30 resize-none font-mono"
+              />
+              <button
+                onClick={processManualText}
+                disabled={!manualText.trim() || loading}
+                className="mt-6 w-full bg-primary text-background py-4 rounded-2xl font-black uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
+                Extrair Entregas
+              </button>
             </div>
-          )}
-
-          {results.length > 0 && (
+          ) : (
             <div className="space-y-4">
-              <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex items-center justify-between">
-                <div>
-                  <p className="text-primary font-black text-lg">{results.length}</p>
-                  <p className="text-secondary text-[10px] uppercase font-bold">Itens Detectados</p>
-                </div>
-                <p className="text-secondary text-xs italic">Verifique se está tudo correto</p>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-white/90">
+                  {results.filter(r => r.selected).length} de {results.length} identificadas
+                </h3>
               </div>
-
+              
               <div className="space-y-3">
                 {results.map((item, idx) => (
-                  <div key={idx} className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col gap-1">
-                        <p className="text-sm font-black uppercase text-white/90">{item.nome_destinatario}</p>
-                        <p className="text-[10px] text-secondary opacity-60 line-clamp-2">
-                          {item.endereco_completo}, {item.numero}
-                        </p>
+                  <div 
+                    key={idx}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                      item.selected 
+                        ? 'bg-primary/5 border-primary/30' 
+                        : 'bg-background border-white/5 opacity-50'
+                    }`}
+                    onClick={() => toggleItem(idx)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5 transition-colors ${
+                        item.selected ? 'bg-primary border-primary text-background' : 'border-white/20'
+                      }`}>
+                        {item.selected && <Check size={14} strokeWidth={3} />}
                       </div>
-                      <Check size={18} className="text-green-500 shrink-0 mt-1" />
-                    </div>
-                    
-                    <div className="flex flex-col gap-2">
-                      {item.ponto_referencia && (
-                        <p className="text-[9px] text-secondary/40 italic font-medium line-clamp-2">
-                          Ref: {item.ponto_referencia}
-                        </p>
-                      )}
-                      
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {item.bairro && (
-                          <span className="font-mono text-[9px] bg-primary/10 border border-primary/20 text-primary/80 px-2 py-1 rounded-md tracking-wider">
-                            BAIRRO: {item.bairro}
+                      <div className="flex-1 min-w-0 flex flex-col gap-1">
+                        <div className="font-bold text-white truncate">{item.nome_destinatario}</div>
+                        <div className="text-xs text-secondary/70 truncate">{item.endereco_completo}, {item.numero}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] bg-white/5 px-2 py-1 rounded font-mono text-secondary">
+                            {item.codigo_rastreio}
                           </span>
-                        )}
-                        {item.cep && (
-                          <span className="font-mono text-[9px] bg-white/5 border border-white/10 text-secondary/80 px-2 py-1 rounded-md tracking-wider">
-                            CEP: {item.cep}
-                          </span>
-                        )}
-                        {item.codigo_rastreio && (
-                          <span className="font-mono text-[9px] bg-white/10 border border-white/10 text-white/80 px-2 py-1 rounded-md tracking-wider">
-                            ID: {item.codigo_rastreio}
-                          </span>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -253,29 +126,23 @@ export default function BulkImporter({ onImport, onCancel }) {
               </div>
             </div>
           )}
-
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-start gap-3">
-              <AlertCircle className="text-red-500" size={20} />
-              <p className="text-xs text-red-200 font-bold">{error}</p>
-            </div>
-          )}
         </div>
 
-        {/* Footer actions */}
+        {/* Footer */}
         {results.length > 0 && (
-          <div className="p-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
-            <button 
+          <div className="p-6 border-t border-white/5 bg-background/50 flex gap-3">
+            <button
               onClick={tryAgain}
-              className="flex-1 py-4 text-xs font-black text-secondary uppercase tracking-widest"
+              className="flex-1 bg-white/5 text-white py-4 rounded-xl font-bold text-sm hover:bg-white/10 transition-all"
             >
-              Tentar Outro
+              Voltar
             </button>
-            <button 
-              onClick={() => onImport(results)}
-              className="flex-[2] py-4 bg-primary text-background rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl"
+            <button
+              onClick={() => onImport(results.filter(r => r.selected))}
+              disabled={results.filter(r => r.selected).length === 0}
+              className="flex-[2] bg-primary text-background py-4 rounded-xl font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all disabled:opacity-50"
             >
-              IMPORTAR TUDO
+              Importar ({results.filter(r => r.selected).length})
             </button>
           </div>
         )}

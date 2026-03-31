@@ -1,36 +1,14 @@
 import React, { useState } from 'react';
 import Layout from './components/Layout';
-import Scanner from './components/Scanner';
 import Dashboard from './components/Dashboard';
-import OCRConfirmation from './components/OCRConfirmation';
 import BulkImporter from './components/BulkImporter';
 import { useDeliveries } from './hooks/useDeliveries';
 import { Sparkles, History, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('route');
-  const [ocrData, setOcrData] = useState(null);
   const [showBulkImporter, setShowBulkImporter] = useState(false);
   const { deliveries, loading, error, addDelivery, addBulkDeliveries, updateStatus, seedData, deleteDeliveries, saveRouteOptimization } = useDeliveries();
-
-  const handleOCRSuccess = (data) => {
-    setOcrData(data);
-  };
-
-  const handleConfirmOCR = async (finalData) => {
-    const { error: addError } = await addDelivery({
-      ...finalData,
-      status: 'pendente',
-      user_id: null,
-    });
-
-    if (addError) {
-      alert("Erro ao salvar: " + addError);
-    } else {
-      setOcrData(null);
-      setActiveTab('route');
-    }
-  };
 
   const handleBulkImport = async (items) => {
     const { error: bulkError } = await addBulkDeliveries(items);
@@ -44,11 +22,6 @@ export default function App() {
 
   return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'scan' && (
-        <Scanner 
-          onOCRSuccess={handleOCRSuccess}
-        />
-      )}
       
       {activeTab === 'route' && (
         <Dashboard 
@@ -64,14 +37,6 @@ export default function App() {
 
       {activeTab === 'completed' && (
         <CompletedView deliveries={deliveries} loading={loading} />
-      )}
-
-      {ocrData && (
-        <OCRConfirmation 
-          data={ocrData} 
-          onConfirm={handleConfirmOCR}
-          onCancel={() => setOcrData(null)}
-        />
       )}
 
       {showBulkImporter && (
