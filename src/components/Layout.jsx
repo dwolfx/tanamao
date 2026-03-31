@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, Map, CheckCircle } from 'lucide-react';
+import { Map, CheckCircle, ListOrdered } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -9,7 +9,8 @@ function cn(...inputs) {
 
 export default function Layout({ children, activeTab, onTabChange }) {
   const tabs = [
-    { id: 'route', label: 'Minha Rota', icon: Map },
+    { id: 'route', label: 'Lista', icon: ListOrdered },
+    { id: 'map', label: 'Mapa', icon: Map },
     { id: 'completed', label: 'Concluídas', icon: CheckCircle },
   ];
 

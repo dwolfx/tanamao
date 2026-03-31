@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import BulkImporter from './components/BulkImporter';
+import RouteMap from './components/RouteMap';
 import { useDeliveries } from './hooks/useDeliveries';
 import { Sparkles, History, CheckCircle2 } from 'lucide-react';
 
@@ -33,6 +34,10 @@ export default function App() {
           deleteDeliveries={deleteDeliveries}
           saveRouteOptimization={saveRouteOptimization}
         />
+      )}
+
+      {activeTab === 'map' && (
+        <RouteMap deliveries={deliveries} />
       )}
 
       {activeTab === 'completed' && (
